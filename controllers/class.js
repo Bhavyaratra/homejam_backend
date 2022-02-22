@@ -23,7 +23,7 @@ exports.createClass =async (req,res) =>
         if(saveClass){
             const updateUserRes = await Users.findOneAndUpdate({_id : id}, {"$push":{classes : newClass._id}})
             console.log(updateUserRes)
-            return res.status(201).json({message : "Class is created Successfully", data :newClass});
+            return res.status(201).json({success: true,message : "Class is created Successfully", data :newClass});
         }
     
     }catch(error){
@@ -39,12 +39,9 @@ exports.getClass =async (req,res) =>
         return res.status(400).json({success: false , message : "No Classes Found"});
     }
     try{
-        let data=[];
-        for(let i=0; i<classes.length; i++){
-            const classData = await Classes.findById(classes[i])
-            if(classData) data.push(classData);
-        }
-        res.status(201).json({success: true ,data});
+        const {classes} = await Users.findById(req.user._id).populate('classes');
+     
+        res.status(201).json({success: true ,data: classes}); 
     }catch(error){
        return res.status(400).json({success: false , message : "Class Not Found",error : error});
     }
@@ -54,13 +51,13 @@ exports.deleteClass =async (req,res) =>
 {
     const classId = req.body.classId;
     const role = req.user.role;
-    const userId = req.user.id;
+    const userId = req.user.id; //userid of teacher
     try{
         if(role==="teacher"){
            const classData = await Classes.findById(classId);
 
            if(classData!==null && classData.createdBy==userId){
-            const students = classData.students;
+            const students = classData.students; //list of id's of students
             const updateUserRes = await Users.findByIdAndUpdate(userId, {"$pull":{classes : classId}})
             const deleteClassRes = await Classes.findByIdAndDelete(classId); 
             for(let i=0;i<students.length;i++){
